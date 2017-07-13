@@ -72,13 +72,27 @@ class DoomEnv(gym.Env):
         self.curr_seed = 0
         self.lock = (DoomLock()).get_lock()
         self.action_space = spaces.MultiDiscrete([[0, 1]] * 38 + [[-10, 10]] * 2 + [[-100, 100]] * 3)
+        self.action_range = [(self.action_space.high[k] - self.action_space.low[k] + 1) for k in range(NUM_ACTIONS)]
         self.allowed_actions = list(range(NUM_ACTIONS))
-        self.screen_height = 480
-        self.screen_width = 640
-        self.screen_resolution = ScreenResolution.RES_640X480
+        self._calculate_action_stride()
+        #self.screen_height = 480
+        #self.screen_width = 640
+        #self.screen_resolution = ScreenResolution.RES_640X480
+        self.screen_height = 120
+        self.screen_width = 160
+        self.screen_resolution = ScreenResolution.RES_160X120
         self.observation_space = spaces.Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 3))
         self._seed()
         self._configure()
+
+    def _calculate_action_stride(self):
+        self.action_stride = [0 for _ in range(len(self.allowed_actions))]
+        for i, _ in enumerate(self.allowed_actions):
+            if i == 0:
+                self.action_stride[i] = 1
+            else:
+                prev_k = self.allowed_actions[i-1]
+                self.action_stride[i] = self.action_stride[i-1] * self.action_range[prev_k]
 
     def _configure(self, lock=None, **kwargs):
         if 'screen_resolution' in kwargs:
@@ -86,6 +100,7 @@ class DoomEnv(gym.Env):
         # Multiprocessing lock
         if lock is not None:
             self.lock = lock
+        self._load_level()
 
     def _load_level(self):
         # Closing if is_initialized
@@ -112,6 +127,7 @@ class DoomEnv(gym.Env):
                 self.game.set_doom_map(DOOM_SETTINGS[self.level][MAP])
             self.game.set_doom_skill(DOOM_SETTINGS[self.level][DIFFICULTY])
             self.allowed_actions = DOOM_SETTINGS[self.level][ACTIONS]
+            self._calculate_action_stride()
             self.game.set_screen_resolution(self.screen_resolution)
 
         self.previous_level = self.level
@@ -175,6 +191,17 @@ class DoomEnv(gym.Env):
         return
 
     def _step(self, action):
+        #print("DEBUG: DoomEnv: allowed actions:", self.allowed_actions)
+        # NOTE: rllab likes scalar discrete actions.
+        if isinstance(action, int):
+            # FIXME
+            #logger.warn('DoomEnv does not yet support int actions.')
+            #raise NotImplementedError
+            new_action = [0 for _ in range(NUM_ACTIONS)]
+            for i, k in enumerate(self.allowed_actions):
+                new_action[k] = self.action_space.low[k] + ((action // self.action_stride[i]) % self.action_range[k])
+                assert new_action[k] <= self.action_space.high[k]
+            action = new_action
         if NUM_ACTIONS != len(action):
             logger.warn('Doom action list must contain %d items. Padding missing items with 0' % NUM_ACTIONS)
             old_action = action
