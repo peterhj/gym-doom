@@ -130,6 +130,9 @@ class DoomEnv(gym.Env):
             self._calculate_action_stride()
             self.game.set_screen_resolution(self.screen_resolution)
 
+        print("DEBUG: DoomEnv: screen res:   ", self.game.get_screen_width(), self.game.get_screen_height(), self.game.get_screen_channels())
+        print("DEBUG: DoomEnv: screen format:", self.game.get_screen_format())
+
         self.previous_level = self.level
         self._closed = False
 
