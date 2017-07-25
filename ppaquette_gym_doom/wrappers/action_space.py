@@ -51,6 +51,8 @@ def ToDiscrete(config):
             super(ToDiscreteWrapper, self).__init__(env)
             if config == 'minimal':
                 allowed_actions = ALLOWED_ACTIONS[self.unwrapped.level]
+                print("DEBUG: ToDiscreteWrapper: level:", self.unwrapped.level)
+                print("DEBUG: ToDiscreteWrapper: allowed actions:", allowed_actions)
             elif config == 'constant-7':
                 allowed_actions = [0, 10, 11, 13, 14, 15, 31]
             elif config == 'constant-17':
@@ -59,7 +61,24 @@ def ToDiscrete(config):
                 allowed_actions = None
             else:
                 raise gym.error.Error('Invalid configuration. Valid options are "minimal", "constant-7", "constant-17", "full"')
-            self.action_space = DiscreteToMultiDiscrete(self.action_space, allowed_actions)
+            # FIXME: `allowed actions` must be transformed into a dict.
+            def _loop_over_actions(x, discs, k, actions_dict):
+                if k == len(discs):
+                    action = [0 for _ in range(NUM_ACTIONS)]
+                    for i, disc in enumerate(discs):
+                        action[disc] = x[i]
+                    actions_dict[len(actions_dict)] = action
+                    return
+                next_x = list(x)
+                next_x.append(self.action_space.low[discs[k]])
+                _loop_over_actions(next_x, discs, k+1, actions_dict)
+                next_x = list(x)
+                next_x.append(self.action_space.high[discs[k]])
+                _loop_over_actions(next_x, discs, k+1, actions_dict)
+            allowed_actions_dict = {}
+            _loop_over_actions([], allowed_actions, 0, allowed_actions_dict)
+            print("DEBUG: ToDiscreteWrapper: allowed actions dict:", allowed_actions_dict)
+            self.action_space = DiscreteToMultiDiscrete(self.action_space, allowed_actions_dict)
         def _step(self, action):
             return self.env._step(self.action_space(action))
 
