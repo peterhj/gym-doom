@@ -5,7 +5,8 @@ from .multi_discrete import BoxToMultiDiscrete, DiscreteToMultiDiscrete
 NUM_ACTIONS = 43
 ALLOWED_ACTIONS = [
     [0, 10, 11],                                # 0 - Basic
-    [0, 10, 11, 13, 14, 15],                    # 1 - Corridor
+    #[0, 10, 11, 13, 14, 15],                    # 1 - Corridor
+    [10, 14, 15],                    # 1 - Corridor (modified)
     [0, 14, 15],                                # 2 - DefendCenter
     [0, 14, 15],                                # 3 - DefendLine
     [13, 14, 15],                               # 4 - HealthGathering
