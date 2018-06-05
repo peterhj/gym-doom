@@ -84,7 +84,7 @@ class DoomEnv(gym.Env):
         self.screen_resolution = ScreenResolution.RES_160X120
         # HACK(peterhj): the number of channels here is manually set to 4,
         # but should depend on the level screen format.
-        self.observation_space = spaces.Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 4))
+        self.observation_space = spaces.Box(low=0, high=255, shape=(4, self.screen_height, self.screen_width))
         self._seed()
         self._configure()
 
